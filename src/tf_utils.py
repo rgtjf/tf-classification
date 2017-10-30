@@ -63,16 +63,21 @@ def AvgPooling(input_x, input_len, max_input_len):
     return output
 
 
-def MaxPooling(input_x):
+def MaxPooling(input_x, input_lengths):
     """
-    Max_Pooling, implemented by tf.reduce_max
+    Max pooling.
     Args:
-        input_x: [batch, sent, embedding]
+        input_x: [batch, max_sent_len, embedding]
+        input_lengths: [batch]
     Returns:
         [batch, sent_embedding]
     """
-    pool = tf.reduce_max(input_x, axis=1)
-    return pool
+    max_sent_len = tf.shape(input_x)[1]
+    mask = tf.sequence_mask(input_lengths, max_sent_len, dtype=tf.float32)
+    mask = tf.expand_dims((1 - mask) * -1e30, -1)
+    output = tf.reduce_max(input_x + mask, axis=1)
+
+    return output
 
 
 def CNN_Pooling(inputs, filter_sizes=(1, 2, 3, 5), num_filters=100):
