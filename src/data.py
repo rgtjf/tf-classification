@@ -18,12 +18,12 @@ def read_data(file_list):
     Args: file_list:
     Returns:
     """
-    if type(file_list) == six.text_type:
+    if type(file_list) != list:
         file_list = [file_list]
 
     examples = []
     for file in file_list:
-        with codecs.open(file, encoding='utf8') as f:
+        with codecs.open(file, 'r', encoding='utf8') as f:
             for line in f:
                 items = line.strip().split('\t')
                 label = items[0]

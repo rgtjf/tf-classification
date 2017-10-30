@@ -227,7 +227,8 @@ def load_word_embedding(word2index, emb_file, n_dim=300):
     embeddings = np.random.uniform(-0.25, 0.25, (n_words, n_dim))
     embeddings[0, ] = np.zeros(n_dim)
 
-    with open(emb_file, 'r', errors='ignore') as f:
+    with open(emb_file, 'r') as f:
+    # with open(emb_file, 'r', errors='ignore') as f:
         for idx, line in enumerate(f):
             if idx == 0 and len(line.split()) == 2:
                 continue
