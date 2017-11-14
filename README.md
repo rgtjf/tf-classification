@@ -6,11 +6,11 @@ sh run.sh
 ```
 
 ## Done
-- Load Word Embedding
-- Padding
-- Mask
+- [x] Load Word Embedding
+- [x] Padding
+- [x] Mask
 
 ## TODO
-- CNN
-- LSTM
-- Saver
+- [ ] CNN
+- [x] LSTM
+- [ ] Saver
