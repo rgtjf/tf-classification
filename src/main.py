@@ -10,7 +10,7 @@ import config
 import evaluation
 from data import Task
 from models.NBoW import NBoWModel
-
+from models.LSTM import LSTMModel
 
 FLAGS = tf.flags.FLAGS
 tf.set_random_seed(1234)
@@ -40,9 +40,15 @@ logger.info(FLAGS.__flags)
 
 
 def main():
-    task = Task(init=True)
+    task = Task(init=False)
     FLAGS.we = task.embed
-    model = NBoWModel(FLAGS)
+
+    if FLAGS.model == 'nbow':
+        model = NBoWModel(FLAGS)
+    elif FLAGS.model == 'lstm':
+        model = LSTMModel(FLAGS)
+    else:
+        raise NotImplementedError
 
     gpu_config = tf.ConfigProto()
     gpu_config.gpu_options.allow_growth = True
@@ -88,8 +94,8 @@ def main():
             if dev_acc > best_dev_result:
                 best_dev_result = dev_acc
                 best_test_result = test_acc
-            logger.info(
-                'dev = {:.5f}, test = {:.5f} best!!!!'.format(best_dev_result, best_test_result))
+                logger.info(
+                    'dev = {:.5f}, test = {:.5f} best!!!!'.format(best_dev_result, best_test_result))
 
 if __name__ == '__main__':
     main()

@@ -110,10 +110,12 @@ def CNN_Pooling(inputs, filter_sizes=(1, 2, 3, 5), num_filters=100):
 def dot_product_attention(question_rep, passage_repres, passage_mask):
     """
     Attention dot_product
-    question_rep: [batch_size, hidden_size]
-    passage_repres: [batch_size, sequence_length, hidden_size]
-    passage_mask: [batch_size, sequence_length]
-    :return: [batch_size, hidden_size]
+      Args:
+        question_rep: [batch_size, hidden_size]
+        passage_repres: [batch_size, sequence_length, hidden_size]
+        passage_mask: [batch_size, sequence_length]
+      Returns:
+        passage_rep: [batch_size, hidden_size]
     """
     question_rep = tf.expand_dims(question_rep, 1)
     passage_prob = softmask(tf.reduce_sum(question_rep * passage_repres, axis=2), passage_mask)
@@ -124,15 +126,24 @@ def dot_product_attention(question_rep, passage_repres, passage_mask):
 def bilinear_attention(question_rep, passage_repres, passage_mask):
     """
     Attention bilinear
-    Parameters: similat to dot product attention
+    adopt from danqi, https://github.com/danqi/rc-cnn-dailymail/blob/master/code/nn_layers.py
+      Args:
+        question_rep: [batch_size, hidden_size]
+        passage_repres: [batch_size, sequence_length, hidden_size]
+        passage_mask: [batch_size, sequence_length]
+      Returns:
+        passage_rep: [batch_size, hidden_size]
     """
     hidden_size = question_rep.get_shape()[1]
     W_bilinear = tf.get_variable("W_bilinear", shape=[hidden_size, hidden_size], dtype=tf.float32)
 
     question_rep = tf.matmul(question_rep, W_bilinear)
     question_rep = tf.expand_dims(question_rep, 1)
-    passage_prob = softmask(tf.reduce_sum(question_rep * passage_repres, axis=2), passage_mask)
-    passage_rep = tf.reduce_sum(passage_repres * tf.expand_dims(passage_prob, axis=-1), axis=1)
+    alpha = tf.nn.softmax(tf.reduce_sum(question_rep * passage_repres, axis=2))
+    alpha = alpha * passage_mask
+    alpha = alpha / tf.reduce_sum(alpha, axis=-1, keep_dims=True)
+
+    passage_rep = tf.reduce_sum(passage_repres * tf.expand_dims(alpha, axis=-1), axis=1)
     return passage_rep
 
 
@@ -296,7 +307,8 @@ def optimize(loss, optimize_type, lambda_l2, learning_rate, clipper=50):
     return train_op
 
 
-def bilinear_attention_layer(question_repres, question_mask, question_rep, passage_repres, passage_mask, passage_rep,
+def bilinear_attention_layer(question_repres, question_mask, question_rep,
+                             passage_repres, passage_mask, passage_rep,
                              out_size=300, scope=None, reuse=None):
     """
     question_repres: [batch_size, sent_length, dim]
