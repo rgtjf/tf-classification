@@ -5,6 +5,10 @@
 sh run.sh
 ```
 
+alternatively,
+```
+python main.py --model lstm
+```
 ## Done
 - [x] Load Word Embedding
 - [x] Padding

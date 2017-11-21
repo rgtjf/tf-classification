@@ -33,15 +33,19 @@ class LSTMModel(object):
         # Build the Computation Graph
         embedded_x = tf.nn.embedding_lookup(self.we, self.input_x)  # [batch_size, sent_len, emd_size]
 
-        def BiLSTM(input_x, input_x_len, hidden_size, num_layers=1, dropout_rate=None, return_sequence=True):
+        def BiLSTM(input_x, input_x_len, hidden_size, num_layers=1, dropout_keep_rate=None, return_sequence=True):
             """
+            Update 2017.11.21 @rgtjf
+            fix a bug
+            ref: https://stackoverflow.com/questions/44615147/valueerror-trying-to-share-variable-rnn-multi-rnn-cell-cell-0-basic-lstm-cell-k
+            ======
             BiLSTM Layer
             Args:
                 input_x: [batch, sent_len, emb_size]
                 input_x_len: [batch, ]
                 hidden_size: int
                 num_layers: int
-                dropout_rate: float
+                dropout_keep_rate: float
                 return_sequence: True/False
             Returns:
                 if return_sequence=True:
@@ -49,18 +53,23 @@ class LSTMModel(object):
                 else:
                     output: [batch, hidden_size*2]
             """
-            # cell = tf.contrib.rnn.GRUCell(hidden_size)
-            cell_fw = tf.contrib.rnn.BasicLSTMCell(hidden_size)
-            cell_bw = tf.contrib.rnn.BasicLSTMCell(hidden_size)
+
+            def lstm_cell():
+                return tf.contrib.rnn.BasicLSTMCell(hidden_size)
+
+            def gru_cell():
+                return tf.contrib.rnn.GRUCell(hidden_size)
+
+            cell_fw = lstm_cell()
+            cell_bw = lstm_cell()
 
             if num_layers > 1:
-                # Warning! Please consider that whether the cell to stack are the same
-                cell_fw = tf.contrib.rnn.MultiRNNCell([cell_fw for _ in range(num_layers)])
-                cell_bw = tf.contrib.rnn.MultiRNNCell([cell_bw for _ in range(num_layers)])
+                cell_fw = tf.contrib.rnn.MultiRNNCell([lstm_cell() for _ in range(num_layers)])
+                cell_bw = tf.contrib.rnn.MultiRNNCell([lstm_cell() for _ in range(num_layers)])
 
-            if dropout_rate:
-                cell_fw = tf.contrib.rnn.DropoutWrapper(cell_fw, output_keep_prob=(1 - dropout_rate))
-                cell_bw = tf.contrib.rnn.DropoutWrapper(cell_bw, output_keep_prob=(1 - dropout_rate))
+            if dropout_keep_rate:
+                cell_fw = tf.contrib.rnn.DropoutWrapper(cell_fw, output_keep_prob=dropout_keep_rate)
+                cell_bw = tf.contrib.rnn.DropoutWrapper(cell_bw, output_keep_prob=dropout_keep_rate)
 
             b_outputs, b_states = tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, input_x,
                                                                   sequence_length=input_x_len, dtype=tf.float32)
@@ -68,14 +77,15 @@ class LSTMModel(object):
                 outputs = tf.concat(b_outputs, axis=2)
             else:
                 # states: [c, h]
-                outputs = tf.concat([b_states[0][1], b_outputs[1][1]], axis=-1)
+                outputs = tf.concat([b_states[0][1], b_states[1][1]], axis=-1)
             return outputs
 
         with tf.variable_scope("bilstm") as s:
             lstm_x = BiLSTM(embedded_x, self.input_x_len, self.lstm_size,
+                            dropout_keep_rate=self.drop_keep_rate,
                             return_sequence=True)
 
-        avg_pooling = tf_utils.AvgPooling(embedded_x, self.input_x_len, self.seq_len)
+        avg_pooling = tf_utils.AvgPooling(embedded_x, self.input_x_len)
         max_pooling = tf_utils.MaxPooling(lstm_x, self.input_x_len)
 
         logits = tf_utils.linear([max_pooling, avg_pooling], self.num_class, bias=True, scope='softmax')

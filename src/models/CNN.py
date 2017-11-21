@@ -32,13 +32,42 @@ class CNNModel(object):
         self.we = tf.Variable(FLAGS.we, name='emb')
 
         # Build the Computation Graph
-
-        # TODO: implenment CNN Begin:
         inputs = tf.nn.embedding_lookup(self.we, self.input_x)  # [batch_size, sent_len, emd_size]
-        avg_pooling = tf_utils.AvgPooling(inputs, self.input_x_len, self.seq_len)
-        # TODO: implenment CNN end
 
-        logits = tf_utils.linear(avg_pooling, self.num_class, bias=True, scope='softmax')
+        def CNN_Pooling(inputs, filter_sizes=(1, 2, 3, 5), num_filters=100):
+            """
+            CNN-MaxPooling
+            Args:
+                inputs: [batch_size, sequence_length, hidden_size]
+                filter_sizes: list, (1, 2, 3, 5)
+                num_filters: int, 100
+            Returns:
+                pool_rep: [batch_size, feature_size]
+            """
+            sequence_length = inputs.get_shape()[1]
+            input_size = inputs.get_shape()[2]
+            inputs = tf.expand_dims(inputs, axis=-1)
+            pooled_outputs = []
+            for i, filter_size in enumerate(filter_sizes):
+                with tf.variable_scope("conv-maxpool-%s" % filter_size):
+                    filter_shape = [filter_size, input_size, 1, num_filters]
+                    W = tf.get_variable("W", filter_shape, initializer=tf.random_normal_initializer())
+                    b = tf.get_variable("b", [num_filters], initializer=tf.constant_initializer(0.0))
+                    conv = tf.nn.conv2d(inputs, W, strides=[1, 1, 1, 1], padding='VALID', name="conv-1")
+                    h = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu-1")
+                    pooled = tf.nn.max_pool(h,
+                                            ksize=[1, sequence_length - filter_size + 1, 1, 1],
+                                            strides=[1, 1, 1, 1],
+                                            padding='VALID',
+                                            name="poll-1")
+                    pooled_outputs.append(pooled)
+            num_filters_total = num_filters * len(filter_sizes)
+            pooled_reshape = tf.reshape(tf.concat(pooled_outputs, axis=3), [-1, num_filters_total])
+            return pooled_reshape
+
+        cnn_pooling = tf_utils.CNN_Pooling(inputs)
+
+        logits = tf_utils.linear(cnn_pooling, self.num_class, bias=True, scope='softmax')
 
         # Obtain the Predict, Loss, Train_op
         predict_prob = tf.nn.softmax(logits, name='predict_prob')

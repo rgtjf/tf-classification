@@ -65,7 +65,6 @@ class Dataset(object):
         self.x_len = np.array(x_len, dtype=np.int32)  # [batch_size]
         self.y = np.array(y, dtype=np.float32)  # [batch_size, class_number]
 
-
     def batch_iter(self, batch_size, shuffle=False):
         """
         UPDATE_0: add Batch for yield

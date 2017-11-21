@@ -11,6 +11,7 @@ import evaluation
 from data import Task
 from models.NBoW import NBoWModel
 from models.LSTM import LSTMModel
+from models.CNN import CNNModel
 
 FLAGS = tf.flags.FLAGS
 tf.set_random_seed(1234)
@@ -47,6 +48,8 @@ def main():
         model = NBoWModel(FLAGS)
     elif FLAGS.model == 'lstm':
         model = LSTMModel(FLAGS)
+    elif FLAGS.model == 'cnn':
+        model = CNNModel(FLAGS)
     else:
         raise NotImplementedError
 

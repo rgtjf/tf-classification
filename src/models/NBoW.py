@@ -33,7 +33,7 @@ class NBoWModel(object):
 
         # Build the Computation Graph
         inputs = tf.nn.embedding_lookup(self.we, self.input_x)  # [batch_size, sent_len, emd_size]
-        avg_pooling = tf_utils.AvgPooling(inputs, self.input_x_len, self.seq_len)
+        avg_pooling = tf_utils.AvgPooling(inputs, self.input_x_len)
         logits = tf_utils.linear(avg_pooling, self.num_class, bias=True, scope='softmax')
 
         # Obtain the Predict, Loss, Train_op
