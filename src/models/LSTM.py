@@ -67,7 +67,7 @@ class LSTMModel(object):
                 cell_fw = tf.contrib.rnn.MultiRNNCell([lstm_cell() for _ in range(num_layers)])
                 cell_bw = tf.contrib.rnn.MultiRNNCell([lstm_cell() for _ in range(num_layers)])
 
-            if dropout_keep_rate:
+            if dropout_keep_rate is not None:
                 cell_fw = tf.contrib.rnn.DropoutWrapper(cell_fw, output_keep_prob=dropout_keep_rate)
                 cell_bw = tf.contrib.rnn.DropoutWrapper(cell_bw, output_keep_prob=dropout_keep_rate)
 
@@ -82,6 +82,7 @@ class LSTMModel(object):
 
         with tf.variable_scope("bilstm") as s:
             lstm_x = BiLSTM(embedded_x, self.input_x_len, self.lstm_size,
+                            num_layers=2,
                             dropout_keep_rate=self.drop_keep_rate,
                             return_sequence=True)
 
