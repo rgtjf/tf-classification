@@ -19,7 +19,6 @@ class NBoWModel(object):
         self.num_class = config.num_class
         self.lstm_size = 100
 
-
         # Add PlaceHolder
         self.input_x = tf.placeholder(tf.int32, (None, self.seq_len))  # [batch_size, sent_len]
         self.input_x_len = tf.placeholder(tf.int32, (None,))

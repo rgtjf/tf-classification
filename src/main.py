@@ -63,17 +63,17 @@ def main():
         init = tf.global_variables_initializer()
         sess.run(init)
 
-        total_batch = 0
         for epoch in range(FLAGS.max_epoch):
-            total_batch += 1
+            cum_loss = 0
             for batch in task.train_data.batch_iter(FLAGS.batch_size, shuffle=True):
                 results = model.train_model(sess, batch)
                 step = results['global_step']
                 loss = results['loss']
+                cum_loss += loss
+                if step % FLAGS.display_step == 0:
+                    print('epoch_{} steps_{} cost_val: {:.5f}'.format(epoch, step, loss))
 
-                if total_batch % FLAGS.display_step == 0:
-                    print('batch_{} steps_{} cost_val: {:.5f}'.format(total_batch, step, loss))
-                    logger.info('==>  Epoch {:02d}/{:02d}: '.format(epoch, total_batch))
+            logger.info('Epoch {:02d}/{:02d}: cum_loss {:.4f}'.format(epoch, step, cum_loss))
 
             def do_eval(dataset):
                 batch_size = 100  # for Simple
